@@ -1,65 +1,263 @@
-import Image from "next/image";
+'use client';
+
+import { useState } from 'react';
+import FileBrowser from './components/FileBrowser';
+import MarkdownEditor from './components/MarkdownEditor';
+import PrototypeViewer from './components/PrototypeViewer';
+import Instructions from './components/Instructions';
 
 export default function Home() {
+  const [selectedFile, setSelectedFile] = useState<string | null>(null);
+  const [fileContent, setFileContent] = useState<string>('');
+  const [fileType, setFileType] = useState<string>('');
+  const [loading, setLoading] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0);
+
+  const handleFileSelect = async (path: string, type: string) => {
+    if (!path) {
+      setSelectedFile(null);
+      setFileContent('');
+      setFileType('');
+      return;
+    }
+
+    setSelectedFile(path);
+    setFileType(type);
+    setLoading(true);
+
+    try {
+      const response = await fetch(`/api/files?path=${encodeURIComponent(path)}`);
+      const data = await response.json();
+      
+      if (!response.ok || data.error) {
+        // File doesn't exist or was deleted
+        if (response.status === 404 || data.error) {
+          setSelectedFile(null);
+          setFileContent('');
+          setFileType('');
+          return;
+        }
+        console.error('Error loading file:', data.error);
+        setFileContent('');
+      } else {
+        setFileContent(data.content);
+      }
+    } catch (error) {
+      console.error('Error fetching file:', error);
+      // If fetch fails, clear selection
+      setSelectedFile(null);
+      setFileContent('');
+      setFileType('');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSave = async (content: string) => {
+    if (!selectedFile) return;
+    
+    const response = await fetch('/api/files', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ path: selectedFile, content }),
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to save');
+    }
+
+    setFileContent(content);
+    setRefreshKey((k) => k + 1);
+  };
+
+  const handleDelete = async () => {
+    if (!selectedFile) return;
+
+    const response = await fetch(`/api/files?path=${encodeURIComponent(selectedFile)}`, {
+      method: 'DELETE',
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to delete');
+    }
+
+    setSelectedFile(null);
+    setFileContent('');
+    setRefreshKey((k) => k + 1);
+  };
+
+  const handleCreateFile = async () => {
+    const fileName = prompt('Enter file name (e.g., my-document.md):');
+    if (!fileName) return;
+
+    // Ensure it ends with .md
+    const finalName = fileName.endsWith('.md') ? fileName : `${fileName}.md`;
+    const filePath = `docs and prds/${finalName}`;
+
+    try {
+      const response = await fetch('/api/files', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ path: filePath, content: `# ${finalName.replace('.md', '')}\n\n` }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to create file');
+      }
+
+      setRefreshKey((k) => k + 1);
+      handleFileSelect(filePath, 'file');
+    } catch (error) {
+      console.error('Error creating file:', error);
+      alert('Failed to create file');
+    }
+  };
+
+  const handleCreatePrototype = async () => {
+    const prototypeName = prompt('Enter prototype name (will be used as folder name):');
+    if (!prototypeName) return;
+
+    // Sanitize name (remove spaces, special chars)
+    const sanitizedName = prototypeName.toLowerCase().replace(/[^a-z0-9-]/g, '-');
+    const prototypePath = `prototypes/${sanitizedName}`;
+
+    try {
+      // Create directory
+      const dirResponse = await fetch('/api/files', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ path: prototypePath, isDirectory: true }),
+      });
+
+      if (!dirResponse.ok) {
+        throw new Error('Failed to create prototype directory');
+      }
+
+      // Create index.html
+      const htmlPath = `${prototypePath}/index.html`;
+      const htmlContent = `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>${prototypeName}</title>
+    <style>
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            padding: 2rem;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+    </style>
+</head>
+<body>
+    <h1>${prototypeName}</h1>
+    <p>Start building your prototype here!</p>
+    <script>
+        console.log('Prototype: ${prototypeName}');
+    </script>
+</body>
+</html>`;
+
+      const fileResponse = await fetch('/api/files', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ path: htmlPath, content: htmlContent }),
+      });
+
+      if (!fileResponse.ok) {
+        throw new Error('Failed to create index.html');
+      }
+
+      setRefreshKey((k) => k + 1);
+      const url = `${window.location.origin}/prototypes/${sanitizedName}`;
+      alert(`Prototype created! Access it at: ${url}\n\nYou can share this URL with your team members.`);
+    } catch (error) {
+      console.error('Error creating prototype:', error);
+      alert('Failed to create prototype');
+    }
+  };
+
+  const isMarkdown = (path: string) => {
+    return path.endsWith('.md') || path.endsWith('.markdown');
+  };
+
+  const isPrototype = (path: string) => {
+    return path.endsWith('.html') && path.includes('prototypes');
+  };
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
+    <div className="flex h-screen bg-white dark:bg-gray-950">
+      {/* Sidebar */}
+      <div className="w-64 flex-shrink-0">
+        <FileBrowser 
+          key={refreshKey}
+          onFileSelect={handleFileSelect} 
+          currentPath={selectedFile || undefined}
+          refreshKey={refreshKey}
+          onRefresh={() => setRefreshKey((k) => k + 1)}
         />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
+      </div>
+
+      {/* Main Content */}
+      <div className="flex-1 flex flex-col overflow-hidden">
+        {/* Header */}
+        <header className="h-14 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between px-6">
+          <div className="flex items-center gap-4">
+            <h1 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+              Personal Productivity Hub
+            </h1>
+            {selectedFile && (
+              <span className="text-sm text-gray-500 dark:text-gray-400">
+                {selectedFile}
+              </span>
+            )}
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleCreateFile}
+              className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 text-sm"
             >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
+              + New Doc
+            </button>
+            <button
+              onClick={handleCreatePrototype}
+              className="px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 text-sm"
             >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
+              + New Prototype
+            </button>
+          </div>
+        </header>
+
+        {/* Content Area */}
+        <main className="flex-1 overflow-hidden">
+          {!selectedFile ? (
+            <Instructions 
+              onCreateDoc={handleCreateFile}
+              onCreatePrototype={handleCreatePrototype}
             />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
+          ) : loading ? (
+            <div className="h-full flex items-center justify-center bg-gray-50 dark:bg-gray-900">
+              <div className="text-gray-500 dark:text-gray-400">Loading...</div>
+            </div>
+          ) : isPrototype(selectedFile) ? (
+            <PrototypeViewer prototypePath={selectedFile} />
+          ) : isMarkdown(selectedFile) ? (
+            <MarkdownEditor
+              filePath={selectedFile}
+              initialContent={fileContent}
+              onSave={handleSave}
+              onDelete={handleDelete}
+            />
+          ) : (
+            <div className="h-full overflow-y-auto bg-white dark:bg-gray-950 p-6">
+              <pre className="font-mono text-sm text-gray-900 dark:text-gray-100 whitespace-pre-wrap">
+                {fileContent}
+              </pre>
+            </div>
+          )}
+        </main>
+      </div>
     </div>
   );
 }
