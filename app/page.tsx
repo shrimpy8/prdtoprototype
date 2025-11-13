@@ -1,27 +1,43 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import FileBrowser from './components/FileBrowser';
 import MarkdownEditor from './components/MarkdownEditor';
 import PrototypeViewer from './components/PrototypeViewer';
 import Instructions from './components/Instructions';
+import DocumentsListView from './components/DocumentsListView';
+import PrototypesListView from './components/PrototypesListView';
 
 export default function Home() {
   const [selectedFile, setSelectedFile] = useState<string | null>(null);
+  const [selectedFolder, setSelectedFolder] = useState<string | null>(null);
   const [fileContent, setFileContent] = useState<string>('');
   const [fileType, setFileType] = useState<string>('');
   const [loading, setLoading] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
+  const [sidebarWidth, setSidebarWidth] = useState(320);
+  const [isResizing, setIsResizing] = useState(false);
+  const sidebarRef = useRef<HTMLDivElement>(null);
+  const resizeRef = useRef<HTMLDivElement>(null);
+
+  const handleFolderSelect = (path: string) => {
+    setSelectedFolder(path);
+    setSelectedFile(null);
+    setFileContent('');
+    setFileType('');
+  };
 
   const handleFileSelect = async (path: string, type: string) => {
     if (!path) {
       setSelectedFile(null);
+      setSelectedFolder(null);
       setFileContent('');
       setFileType('');
       return;
     }
 
     setSelectedFile(path);
+    setSelectedFolder(null);
     setFileType(type);
     setLoading(true);
 
@@ -113,7 +129,7 @@ export default function Home() {
     }
   };
 
-  const handleCreatePrototype = async () => {
+  const handleCreatePrototype = async (): Promise<void> => {
     const prototypeName = prompt('Enter prototype name (will be used as folder name):');
     if (!prototypeName) return;
 
@@ -186,18 +202,62 @@ export default function Home() {
     return path.endsWith('.html') && path.includes('prototypes');
   };
 
+  // Resize handler
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!isResizing || !sidebarRef.current) return;
+      
+      const newWidth = e.clientX;
+      if (newWidth >= 250 && newWidth <= 600) {
+        setSidebarWidth(newWidth);
+      }
+    };
+
+    const handleMouseUp = () => {
+      setIsResizing(false);
+    };
+
+    if (isResizing) {
+      document.addEventListener('mousemove', handleMouseMove);
+      document.addEventListener('mouseup', handleMouseUp);
+      document.body.style.cursor = 'col-resize';
+      document.body.style.userSelect = 'none';
+    }
+
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+    };
+  }, [isResizing]);
+
   return (
     <div className="flex h-screen bg-white dark:bg-gray-950">
       {/* Sidebar */}
-      <div className="w-64 flex-shrink-0">
+      <div 
+        ref={sidebarRef}
+        className="flex-shrink-0 bg-white dark:bg-gray-900"
+        style={{ width: `${sidebarWidth}px` }}
+      >
         <FileBrowser 
           key={refreshKey}
-          onFileSelect={handleFileSelect} 
+          onFileSelect={handleFileSelect}
+          onFolderSelect={handleFolderSelect}
           currentPath={selectedFile || undefined}
+          currentFolder={selectedFolder || undefined}
           refreshKey={refreshKey}
           onRefresh={() => setRefreshKey((k) => k + 1)}
         />
       </div>
+
+      {/* Resizer */}
+      <div
+        ref={resizeRef}
+        onMouseDown={() => setIsResizing(true)}
+        className="w-1 bg-gray-300 dark:bg-gray-700 hover:bg-blue-500 dark:hover:bg-blue-600 cursor-col-resize transition-colors flex-shrink-0"
+        style={{ cursor: 'col-resize' }}
+      />
 
       {/* Main Content */}
       <div className="flex-1 flex flex-col overflow-hidden">
@@ -231,7 +291,18 @@ export default function Home() {
 
         {/* Content Area */}
         <main className="flex-1 overflow-hidden">
-          {!selectedFile ? (
+          {selectedFolder === 'docs and prds' ? (
+            <DocumentsListView
+              onFileSelect={handleFileSelect}
+              onCreateDoc={handleCreateFile}
+              refreshKey={refreshKey}
+            />
+          ) : selectedFolder === 'prototypes' ? (
+            <PrototypesListView
+              onCreatePrototype={handleCreatePrototype}
+              refreshKey={refreshKey}
+            />
+          ) : !selectedFile ? (
             <Instructions 
               onCreateDoc={handleCreateFile}
               onCreatePrototype={handleCreatePrototype}

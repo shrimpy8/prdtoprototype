@@ -12,12 +12,14 @@ interface FileItem {
 
 interface FileBrowserProps {
   onFileSelect: (path: string, type: string) => void;
+  onFolderSelect?: (path: string) => void;
   currentPath?: string;
+  currentFolder?: string;
   refreshKey?: number;
   onRefresh?: () => void;
 }
 
-export default function FileBrowser({ onFileSelect, currentPath, refreshKey, onRefresh }: FileBrowserProps) {
+export default function FileBrowser({ onFileSelect, onFolderSelect, currentPath, currentFolder, refreshKey, onRefresh }: FileBrowserProps) {
   const [items, setItems] = useState<FileItem[]>([]);
   const [currentDir, setCurrentDir] = useState('');
   const [loading, setLoading] = useState(true);
@@ -73,13 +75,24 @@ export default function FileBrowser({ onFileSelect, currentPath, refreshKey, onR
   }, [refreshKey]);
 
   const handleItemClick = (item: FileItem, e?: React.MouseEvent) => {
-    // Don't navigate if clicking the delete button
-    if (e && (e.target as HTMLElement).closest('.delete-button')) {
+    // Don't navigate if clicking action buttons
+    if (e && (e.target as HTMLElement).closest('.delete-button, .open-prototype-button')) {
       return;
     }
 
     if (item.type === 'directory') {
-      loadDirectory(item.path);
+      // Check if it's a top-level folder (docs and prds or prototypes)
+      if (item.path === 'docs and prds' || item.path === 'prototypes') {
+        // Notify parent about folder selection
+        if (onFolderSelect) {
+          onFolderSelect(item.path);
+        }
+        // Still navigate into the folder in the sidebar
+        loadDirectory(item.path);
+      } else {
+        // Regular directory navigation
+        loadDirectory(item.path);
+      }
     } else {
       onFileSelect(item.path, item.type);
     }
@@ -159,20 +172,33 @@ export default function FileBrowser({ onFileSelect, currentPath, refreshKey, onR
     return item.type === 'directory' && item.path.startsWith('prototypes/') && item.path !== 'prototypes';
   };
 
+  const getPrototypeName = (path: string) => {
+    // Extract prototype name from path like "prototypes/my-prototype" -> "my-prototype"
+    const parts = path.split('/');
+    return parts[parts.length - 1];
+  };
+
+  const handleOpenPrototype = (item: FileItem, e: React.MouseEvent) => {
+    e.stopPropagation();
+    const prototypeName = getPrototypeName(item.path);
+    const url = `/prototypes/${prototypeName}`;
+    window.open(url, '_blank');
+  };
+
   return (
     <>
-      <div className="h-full flex flex-col bg-gray-50 dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800">
-        <div className="p-4 border-b border-gray-200 dark:border-gray-800">
+      <div className="h-full flex flex-col bg-white dark:bg-gray-900 border-r-2 border-gray-300 dark:border-gray-700 shadow-sm">
+        <div className="p-4 border-b border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-800">
           <div className="flex items-center gap-2 mb-2">
             {currentDir && (
               <button
                 onClick={handleBack}
-                className="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100"
+                className="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 font-medium"
               >
                 ← Back
               </button>
             )}
-            <h2 className="font-semibold text-sm text-gray-700 dark:text-gray-300">
+            <h2 className="font-bold text-base text-gray-900 dark:text-gray-100">
               {currentDir || 'Content'}
             </h2>
           </div>
@@ -193,42 +219,63 @@ export default function FileBrowser({ onFileSelect, currentPath, refreshKey, onR
                 <div
                   key={item.path}
                   className={`group relative flex items-center rounded-md ${
-                    currentPath === item.path
+                    currentPath === item.path || currentFolder === item.path
                       ? 'bg-blue-100 dark:bg-blue-900'
                       : ''
                   }`}
                 >
                   <button
                     onClick={(e) => handleItemClick(item, e)}
-                    className={`flex-1 text-left px-3 py-2 rounded-md hover:bg-gray-200 dark:hover:bg-gray-800 transition-colors flex items-center gap-2 ${
-                      currentPath === item.path
-                        ? 'bg-blue-100 dark:bg-blue-900'
-                        : ''
+                    className={`flex-1 text-left px-4 py-2.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors flex items-center gap-3 font-medium ${
+                      currentPath === item.path || currentFolder === item.path
+                        ? 'bg-blue-100 dark:bg-blue-900 text-blue-900 dark:text-blue-100'
+                        : 'text-gray-700 dark:text-gray-300'
                     }`}
                   >
-                    <span>{getFileIcon(item)}</span>
+                    <span className="text-lg">{getFileIcon(item)}</span>
                     <span className="text-sm truncate flex-1">{item.name}</span>
                   </button>
                   {isPrototypeDirectory(item) && (
-                    <button
-                      onClick={(e) => handleDeleteClick(item, e)}
-                      className="delete-button opacity-0 group-hover:opacity-100 px-2 py-2 text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 transition-opacity"
-                      title="Delete prototype"
-                    >
-                      <svg
-                        className="w-4 h-4"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
+                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <button
+                        onClick={(e) => handleOpenPrototype(item, e)}
+                        className="open-prototype-button px-2 py-2 text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 transition-colors"
+                        title={`Open ${item.name} in new tab`}
                       >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                        />
-                      </svg>
-                    </button>
+                        <svg
+                          className="w-4 h-4"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
+                          />
+                        </svg>
+                      </button>
+                      <button
+                        onClick={(e) => handleDeleteClick(item, e)}
+                        className="delete-button px-2 py-2 text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 transition-colors"
+                        title="Delete prototype"
+                      >
+                        <svg
+                          className="w-4 h-4"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                          />
+                        </svg>
+                      </button>
+                    </div>
                   )}
                 </div>
               ))}
