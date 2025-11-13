@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Neighborhood Chore Scheduler - Prototype</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <!-- Navigation Bar -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <h1 class="logo">🏡 ChoreScheduler</h1>
+            <div class="nav-buttons">
+                <button class="nav-btn" onclick="showView('available-chores')">Browse Chores</button>
+                <button class="nav-btn" onclick="showView('my-schedule')">My Schedule</button>
+                <button class="nav-btn" onclick="showView('earnings')">Earnings</button>
+                <button class="nav-btn profile-btn" onclick="showView('profile')">👤 Profile</button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Available Chores View -->
+    <div id="available-chores" class="view active">
+        <div class="container">
+            <h2>Available Chores in Your Neighborhood</h2>
+            
+            <!-- How It Works Section -->
+            <div class="how-it-works">
+                <h3>📚 How ChoreScheduler Works</h3>
+                <div class="steps-grid">
+                    <div class="step-card">
+                        <div class="step-number">1</div>
+                        <h4>Browse Available Chores</h4>
+                        <p>Neighbors post chores like weeding, trash removal, and driveway sweeping. Filter by type, payment, or date to find work that fits your schedule.</p>
+                    </div>
+                    <div class="step-card">
+                        <div class="step-number">2</div>
+                        <h4>Claim a Chore</h4>
+                        <p>Click "Claim Chore" on any available task. The neighbor will approve your claim, and it will be added to your schedule.</p>
+                    </div>
+                    <div class="step-card">
+                        <div class="step-number">3</div>
+                        <h4>Complete & Get Paid</h4>
+                        <p>On the scheduled date, complete the chore and mark it as done. The neighbor verifies completion and you get paid automatically!</p>
+                    </div>
+                    <div class="step-card">
+                        <div class="step-number">4</div>
+                        <h4>Build Your Reputation</h4>
+                        <p>Earn great reviews from neighbors. Higher ratings help you get more opportunities and build trust in your neighborhood.</p>
+                    </div>
+                </div>
+                <div class="quick-tips">
+                    <h4>💡 Quick Tips</h4>
+                    <ul>
+                        <li>Check your schedule regularly to stay on top of upcoming chores</li>
+                        <li>Mark chores complete as soon as you finish them</li>
+                        <li>Track your earnings in the Earnings tab</li>
+                        <li>Keep your profile updated to attract more opportunities</li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="filters">
+                <select id="filter-type" onchange="filterChores()">
+                    <option value="all">All Types</option>
+                    <option value="weeding">Weeding</option>
+                    <option value="trash">Trash Cans</option>
+                    <option value="sweeping">Driveway Sweeping</option>
+                </select>
+                <select id="filter-payment" onchange="filterChores()">
+                    <option value="all">All Payments</option>
+                    <option value="low">$5-$15</option>
+                    <option value="medium">$16-$30</option>
+                    <option value="high">$31+</option>
+                </select>
+            </div>
+            <div id="chores-list" class="chores-grid">
+                <!-- Chores will be dynamically inserted here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- My Schedule View -->
+    <div id="my-schedule" class="view">
+        <div class="container">
+            <h2>My Scheduled Chores</h2>
+            <div id="schedule-list" class="schedule-list">
+                <!-- Scheduled chores will be inserted here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Earnings View -->
+    <div id="earnings" class="view">
+        <div class="container">
+            <h2>My Earnings</h2>
+            <div class="earnings-summary">
+                <div class="earnings-card">
+                    <h3>Total Earned</h3>
+                    <p class="amount">$<span id="total-earned">0</span></p>
+                </div>
+                <div class="earnings-card">
+                    <h3>This Month</h3>
+                    <p class="amount">$<span id="month-earned">0</span></p>
+                </div>
+                <div class="earnings-card">
+                    <h3>Completed Chores</h3>
+                    <p class="amount"><span id="completed-count">0</span></p>
+                </div>
+            </div>
+            <h3>Payment History</h3>
+            <div id="payment-history" class="payment-list">
+                <!-- Payment history will be inserted here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Profile View -->
+    <div id="profile" class="view">
+        <div class="container">
+            <h2>My Profile</h2>
+            <div class="profile-card">
+                <div class="profile-header">
+                    <div class="avatar">👤</div>
+                    <div>
+                        <h3 id="profile-name">Alex Johnson</h3>
+                        <p class="profile-info">Age: 14</p>
+                        <p class="profile-info">⭐ Rating: <span id="profile-rating">4.8</span>/5.0</p>
+                    </div>
+                </div>
+                <div class="profile-stats">
+                    <div class="stat">
+                        <span class="stat-label">Chores Completed</span>
+                        <span class="stat-value" id="profile-completed">12</span>
+                    </div>
+                    <div class="stat">
+                        <span class="stat-label">Total Earned</span>
+                        <span class="stat-value">$<span id="profile-total">240</span></span>
+                    </div>
+                    <div class="stat">
+                        <span class="stat-label">Active Chores</span>
+                        <span class="stat-value" id="profile-active">3</span>
+                    </div>
+                </div>
+            </div>
+            <h3>Recent Reviews</h3>
+            <div id="reviews-list" class="reviews-list">
+                <!-- Reviews will be inserted here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal for Chore Details -->
+    <div id="chore-modal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal()">&times;</span>
+            <div id="modal-body">
+                <!-- Modal content will be inserted here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Notification Toast -->
+    <div id="toast" class="toast"></div>
+
+    <script src="data.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
+

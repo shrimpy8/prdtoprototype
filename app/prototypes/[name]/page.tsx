@@ -61,22 +61,52 @@ export default async function PrototypePage({ params }: PageProps) {
   // Inject assets into HTML
   let html = prototype.html;
   
-  // Replace relative asset references with inline content
+  // Build CSS and JS content
+  let cssContent = '';
+  const jsFiles: Array<{name: string, content: string}> = [];
+  
   for (const [filename, content] of Object.entries(prototype.assets)) {
     const ext = filename.split('.').pop()?.toLowerCase();
-    
     if (ext === 'css') {
-      // Replace <link rel="stylesheet" href="filename.css"> with inline style
-      html = html.replace(
-        new RegExp(`<link[^>]*href=["']${filename.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}["'][^>]*>`, 'gi'),
-        `<style>${content}</style>`
-      );
+      cssContent += `\n/* ${filename} */\n${content}\n`;
     } else if (ext === 'js') {
-      // Replace <script src="filename.js"></script> with inline script
-      html = html.replace(
-        new RegExp(`<script[^>]*src=["']${filename.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}["'][^>]*></script>`, 'gi'),
-        `<script>${content}</script>`
-      );
+      jsFiles.push({ name: filename, content });
+    }
+  }
+  
+  // Sort JS files: data.js first, then others
+  jsFiles.sort((a, b) => {
+    if (a.name.includes('data')) return -1;
+    if (b.name.includes('data')) return 1;
+    return a.name.localeCompare(b.name);
+  });
+  
+  // Inject CSS in head
+  if (cssContent) {
+    // Remove existing style tags and link tags for CSS
+    html = html.replace(/<link[^>]*rel=["']stylesheet["'][^>]*>/gi, '');
+    // Add CSS before closing head tag
+    if (html.includes('</head>')) {
+      html = html.replace('</head>', `<style>${cssContent}</style></head>`);
+    } else {
+      // If no </head> tag, add before </html> or at start of body
+      html = html.replace('<body>', `<head><style>${cssContent}</style></head><body>`);
+    }
+  }
+  
+  // Inject JS before closing body tag
+  if (jsFiles.length > 0) {
+    // Remove existing script src tags
+    html = html.replace(/<script[^>]*src=["'][^"']*["'][^>]*><\/script>/gi, '');
+    html = html.replace(/<script[^>]*src=["'][^"']*["'][^>]*\/>/gi, '');
+    
+    // Add all JS files before closing body tag
+    const jsContent = jsFiles.map(js => `<!-- ${js.name} --><script>${js.content}</script>`).join('\n');
+    if (html.includes('</body>')) {
+      html = html.replace('</body>', `${jsContent}\n</body>`);
+    } else {
+      // If no </body> tag, add before </html>
+      html = html.replace('</html>', `${jsContent}\n</html>`);
     }
   }
 
