@@ -1,109 +1,225 @@
-# Personal Productivity Hub
+# PRD to Prototype
 
-A simple Next.js app for managing markdown documents, PRDs, and interactive prototypes.
+A Next.js application for managing product requirements documents (PRDs) and creating interactive prototypes. Transform your ideas from documentation to working prototypes in one unified workspace.
 
-## Features
+## 🎯 Overview
 
-- 📄 **Markdown Documents & PRDs**: Create, edit, and delete markdown files with live preview
-- 🚀 **Prototypes**: Create prototype directories that can be accessed via shareable routes
-- ✏️ **CRUD Operations**: Full create, read, update, delete for markdown files
-- 🔗 **Shareable Prototypes**: Each prototype gets its own URL route (`/prototypes/[name]`) that you can share with team members
+**PRD to Prototype** is a productivity tool that helps you:
+- 📝 Write and manage PRDs and documentation in Markdown
+- 🚀 Build interactive HTML prototypes with CSS and JavaScript
+- 🔗 Share prototypes via shareable URLs with your team
+- 💾 Store everything locally in your `content/` directory
 
-## Setup
+Perfect for product managers, designers, and developers who want a simple, local-first approach to managing PRDs and prototyping.
 
-1. **Install dependencies:**
+## ✨ Features
+
+### Document Management
+- **Markdown Editor**: Create, edit, and preview markdown files with live preview
+- **PRD Support**: Organize product requirements documents alongside your documentation
+- **File Browser**: Navigate your content with an intuitive sidebar file browser
+- **CRUD Operations**: Full create, read, update, and delete functionality
+
+### Prototype Creation
+- **Quick Prototyping**: Create new prototypes with a single click
+- **Shareable URLs**: Each prototype gets its own route (`/prototypes/[name]`) that you can share
+- **Asset Management**: Automatically inline CSS and JavaScript files referenced in your HTML
+- **Sandboxed Execution**: Prototypes run in secure iframes for safety
+
+### Developer Experience
+- **Dark Mode**: Automatically follows your system preferences
+- **TypeScript**: Fully typed for better development experience
+- **Modern UI**: Built with Tailwind CSS for a clean, responsive interface
+
+## 🚀 Quick Start
+
+### Prerequisites
+- Node.js 18+ 
+- npm or yarn
+
+### Installation
+
+1. **Clone the repository** (or download the project):
+   ```bash
+   git clone <repository-url>
+   cd prdtoprototype
+   ```
+
+2. **Install dependencies:**
    ```bash
    npm install
    ```
 
-2. **Run the development server:**
+3. **Start the development server:**
    ```bash
    npm run dev
    ```
 
-3. **Open your browser:**
+4. **Open your browser:**
    Navigate to [http://localhost:3000](http://localhost:3000)
 
-## Directory Structure
+That's it! You're ready to start creating documents and prototypes.
 
-The app uses a `content/` directory at the root with the following structure:
+## 📁 Project Structure
 
 ```
-content/
-  ├── docs and prds/    # Markdown documents and PRDs
-  └── prototypes/       # Prototype directories (each with its own route)
-      └── [prototype-name]/
-          ├── index.html
-          ├── style.css (optional)
-          └── script.js (optional)
+prdtoprototype/
+├── app/                    # Next.js app directory
+│   ├── api/               # API routes for file operations
+│   ├── components/        # React components
+│   │   ├── FileBrowser.tsx
+│   │   ├── MarkdownEditor.tsx
+│   │   ├── PrototypeViewer.tsx
+│   │   └── Instructions.tsx
+│   ├── prototypes/        # Dynamic prototype routes
+│   │   └── [name]/
+│   └── page.tsx           # Main home page
+├── content/               # Your content directory (created automatically)
+│   ├── docs and prds/    # Markdown documents and PRDs
+│   │   ├── welcome.md
+│   │   └── *.md
+│   └── prototypes/       # Prototype directories
+│       └── [prototype-name]/
+│           ├── index.html
+│           ├── styles.css (optional)
+│           └── app.js (optional)
+└── public/               # Static assets
 ```
 
-## Usage
+## 📖 Usage Guide
 
-### Documents (Markdown Files)
+### Creating Documents
 
-1. **Create a Document**: Click "+ New Doc" button, enter a filename
-2. **Edit**: Click "Edit" button to modify the markdown content
-3. **Save**: Click "Save" after editing
-4. **Delete**: Click "Delete" button (with confirmation)
+1. Click the **"+ New Doc"** button in the header
+2. Enter a filename (e.g., `my-prd.md`)
+3. The file will be created in `content/docs and prds/`
+4. Click the file in the sidebar to open it
+5. Click **"Edit"** to modify the content
+6. Click **"Save"** when done
+7. Use **"Delete"** to remove files (with confirmation)
 
-### Prototypes
+### Creating Prototypes
 
-1. **Create a Prototype**: 
-   - Click "+ New Prototype" button
-   - Enter a name (will be sanitized for URL)
-   - A new directory is created with a starter `index.html`
+1. Click the **"+ New Prototype"** button in the header
+2. Enter a prototype name (e.g., `my-app`)
+3. The name will be sanitized for URL use
+4. A new directory is created with a starter `index.html`
 
-2. **Access Your Prototype**:
-   - Each prototype is accessible at: `/prototypes/[name]`
-   - Example: `http://localhost:3000/prototypes/my-app`
-   - Share this URL with your team members!
+### Accessing Prototypes
 
-3. **Add Assets**:
-   - Edit the `index.html` file in the prototype directory
-   - Add CSS files (they'll be automatically inlined)
-   - Add JS files (they'll be automatically inlined)
-   - Reference them in HTML: `<link rel="stylesheet" href="style.css">` or `<script src="script.js"></script>`
+Each prototype is automatically accessible at:
+```
+http://localhost:3000/prototypes/[name]
+```
 
-## API Routes
+**Example:** If you create a prototype named "my-app", access it at:
+```
+http://localhost:3000/prototypes/my-app
+```
 
-- `GET /api/files?path=...` - Read a file
-- `GET /api/files?dir=...` - List directory contents
-- `POST /api/files` - Create a file or directory
-- `PUT /api/files` - Update a file
-- `DELETE /api/files?path=...` - Delete a file or directory
+You can share this URL with team members - they'll see your prototype running live!
 
-## Prototype Routes
+### Adding Assets to Prototypes
 
-Each prototype directory automatically gets a route:
-- `/prototypes/[name]` - View the prototype
+Prototypes support CSS and JavaScript files that are automatically inlined:
 
-The route reads `index.html` and automatically inlines any CSS/JS files referenced in the HTML.
+1. Edit the `index.html` file in your prototype directory
+2. Reference CSS files: `<link rel="stylesheet" href="styles.css">`
+3. Reference JS files: `<script src="app.js"></script>`
+4. The app will automatically inline these files when serving the prototype
 
-## Development
+**Example prototype structure:**
+```
+prototypes/my-app/
+├── index.html
+├── styles.css
+└── app.js
+```
 
-- **Build for production:**
-  ```bash
-  npm run build
-  ```
+## 🔌 API Reference
 
-- **Start production server:**
-  ```bash
-  npm start
-  ```
+The app provides a REST API for file operations:
 
-## Tech Stack
+### Read a File
+```http
+GET /api/files?path=docs and prds/my-doc.md
+```
 
-- Next.js 16 (App Router)
-- TypeScript
-- Tailwind CSS
-- React Markdown
-- File System API (Node.js)
+### List Directory Contents
+```http
+GET /api/files?dir=prototypes
+```
 
-## Notes
+### Create a File or Directory
+```http
+POST /api/files
+Content-Type: application/json
 
-- All content is stored locally in the `content/` directory
-- The app reads files directly from the filesystem
-- Prototypes run in sandboxed iframes for security
-- Dark mode is automatically enabled based on system preferences
-- Prototype routes are shareable URLs that team members can access
+{
+  "path": "docs and prds/new-doc.md",
+  "content": "# My Document\n\nContent here...",
+  "isDirectory": false
+}
+```
+
+### Update a File
+```http
+PUT /api/files
+Content-Type: application/json
+
+{
+  "path": "docs and prds/my-doc.md",
+  "content": "# Updated Content"
+}
+```
+
+### Delete a File or Directory
+```http
+DELETE /api/files?path=docs and prds/my-doc.md
+```
+
+## 🛠️ Development
+
+### Build for Production
+```bash
+npm run build
+```
+
+### Start Production Server
+```bash
+npm start
+```
+
+### Linting
+```bash
+npm run lint
+```
+
+## 🧰 Tech Stack
+
+- **Framework**: [Next.js 16](https://nextjs.org/) (App Router)
+- **Language**: [TypeScript](https://www.typescriptlang.org/)
+- **Styling**: [Tailwind CSS](https://tailwindcss.com/)
+- **Markdown**: [react-markdown](https://github.com/remarkjs/react-markdown) with [remark-gfm](https://github.com/remarkjs/remark-gfm)
+- **File Processing**: [gray-matter](https://github.com/jonschlinkert/gray-matter)
+- **Runtime**: Node.js File System API
+
+## 📝 Notes
+
+- **Local Storage**: All content is stored locally in the `content/` directory - no cloud, no database, just files
+- **File System**: The app reads and writes directly to the filesystem
+- **Security**: Prototypes run in sandboxed iframes to prevent security issues
+- **Dark Mode**: Automatically enabled based on your system preferences
+- **Shareable URLs**: Prototype routes work both locally and when deployed
+
+## 🤝 Contributing
+
+Contributions are welcome! Feel free to open issues or submit pull requests.
+
+## 📄 License
+
+This project is private and proprietary.
+
+---
+
+**Happy prototyping!** 🚀
