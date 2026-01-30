@@ -1,5 +1,9 @@
 # Personal Productivity Hub
 
+![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue)
+![Next.js](https://img.shields.io/badge/Next.js-16-black)
+![React](https://img.shields.io/badge/React-19-61DAFB)
+
 A Next.js application for managing product requirements documents (PRDs) and creating interactive prototypes. Transform your ideas from documentation to working prototypes in one unified workspace.
 
 ## 🎯 Overview
@@ -244,11 +248,29 @@ npm run lint
 
 - **Local Storage**: All content is stored locally in the `content/` directory - no cloud, no database, just files
 - **File System**: The app reads and writes directly to the filesystem
-- **Security**: Prototypes run in sandboxed iframes to prevent security issues
 - **Dark Mode**: Automatically enabled based on your system preferences
 - **Shareable URLs**: Prototype routes work both locally and when deployed
 - **Resizable Interface**: Sidebar width is adjustable for optimal viewing experience
 - **List Views**: Dedicated views for documents and prototypes make it easy to browse and manage your content
+
+## 🔒 Security Features
+
+### API Protection
+- **Path Traversal Prevention**: Sanitizes all file paths to prevent directory traversal attacks
+- **Request Size Limits**: 10MB maximum file size to prevent DoS attacks
+- **Rate Limiting**: 100 requests per minute per IP address to prevent API abuse
+- **Content-Type Validation**: Whitelist of allowed file extensions (text/code files only)
+
+### Execution Safety
+- **Sandboxed Prototypes**: All HTML prototypes run in secure iframes
+- **Input Validation**: All user inputs validated and sanitized
+- **TypeScript Safety**: Full type coverage prevents common bugs
+- **Error Handling**: Comprehensive error handling prevents information leakage
+
+### Security Updates
+- **Path Traversal Fixed**: Added sanitization to all file operations (2025-11-26)
+- **Rate Limiting Added**: Prevents API abuse and brute force attacks (2025-11-26)
+- **Size Limits Added**: Protects against memory exhaustion (2025-11-26)
 
 ## 🤝 Contributing
 
