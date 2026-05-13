@@ -10,7 +10,14 @@ interface PageProps {
 
 async function getPrototype(name: string) {
   try {
+    if (name.includes('..') || name.includes('/') || name.includes('\\') || name.includes('\0')) {
+      return null;
+    }
     const prototypeDir = path.join(CONTENT_DIR, 'prototypes', name);
+    const prototypesRoot = path.join(CONTENT_DIR, 'prototypes');
+    if (!prototypeDir.startsWith(prototypesRoot + path.sep)) {
+      return null;
+    }
     const indexPath = path.join(prototypeDir, 'index.html');
     
     // Check if directory exists
@@ -115,7 +122,7 @@ export default async function PrototypePage({ params }: PageProps) {
       <iframe
         srcDoc={html}
         className="w-full h-full border-0"
-        sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
+        sandbox="allow-scripts allow-forms allow-popups"
         title={name}
       />
     </div>

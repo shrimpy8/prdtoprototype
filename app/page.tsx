@@ -129,6 +129,14 @@ export default function Home() {
     }
   };
 
+  const escapeHtml = (str: string): string =>
+    str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;').replace(/'/g, '&#039;');
+
+  const escapeJs = (str: string): string =>
+    str.replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/"/g, '\\"')
+      .replace(/</g, '\\x3c').replace(/>/g, '\\x3e').replace(/\n/g, '\\n');
+
   const handleCreatePrototype = async (): Promise<void> => {
     const prototypeName = prompt('Enter prototype name (will be used as folder name):');
     if (!prototypeName) return;
@@ -156,7 +164,7 @@ export default function Home() {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>${prototypeName}</title>
+    <title>${escapeHtml(prototypeName)}</title>
     <style>
         body {
             font-family: system-ui, -apple-system, sans-serif;
@@ -167,10 +175,10 @@ export default function Home() {
     </style>
 </head>
 <body>
-    <h1>${prototypeName}</h1>
+    <h1>${escapeHtml(prototypeName)}</h1>
     <p>Start building your prototype here!</p>
     <script>
-        console.log('Prototype: ${prototypeName}');
+        console.log('Prototype: ${escapeJs(prototypeName)}');
     </script>
 </body>
 </html>`;

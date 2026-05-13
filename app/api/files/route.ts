@@ -99,10 +99,8 @@ export async function POST(request: Request) {
   }
 
   try {
-    // Check request size to prevent DoS attacks
-    const contentLength = request.headers.get('content-length');
     const MAX_SIZE = 10 * 1024 * 1024; // 10MB
-
+    const contentLength = request.headers.get('content-length');
     if (contentLength && parseInt(contentLength) > MAX_SIZE) {
       return NextResponse.json(
         { error: 'File too large. Maximum size is 10MB.' },
@@ -110,7 +108,14 @@ export async function POST(request: Request) {
       );
     }
 
-    const body = await request.json();
+    const rawBody = await request.text();
+    if (rawBody.length > MAX_SIZE) {
+      return NextResponse.json(
+        { error: 'File too large. Maximum size is 10MB.' },
+        { status: 413 }
+      );
+    }
+    const body = JSON.parse(rawBody);
     const { path: filePath, content, isDirectory } = body;
 
     if (!filePath) {
@@ -181,10 +186,8 @@ export async function PUT(request: Request) {
   }
 
   try {
-    // Check request size to prevent DoS attacks
-    const contentLength = request.headers.get('content-length');
     const MAX_SIZE = 10 * 1024 * 1024; // 10MB
-
+    const contentLength = request.headers.get('content-length');
     if (contentLength && parseInt(contentLength) > MAX_SIZE) {
       return NextResponse.json(
         { error: 'File too large. Maximum size is 10MB.' },
@@ -192,12 +195,35 @@ export async function PUT(request: Request) {
       );
     }
 
-    const body = await request.json();
+    const rawBody = await request.text();
+    if (rawBody.length > MAX_SIZE) {
+      return NextResponse.json(
+        { error: 'File too large. Maximum size is 10MB.' },
+        { status: 413 }
+      );
+    }
+    const body = JSON.parse(rawBody);
     const { path: filePath, content } = body;
 
     if (!filePath || content === undefined) {
       return NextResponse.json(
         { error: 'Path and content are required' },
+        { status: 400 }
+      );
+    }
+
+    // Validate file extension (defense-in-depth, same allowlist as POST)
+    const ext = path.extname(filePath).toLowerCase();
+    const allowedExtensions = [
+      '.md', '.txt', '.json', '.js', '.jsx', '.ts', '.tsx',
+      '.html', '.css', '.scss', '.yaml', '.yml', '.xml',
+      '.sh', '.py', '.rb', '.go', '.java', '.c', '.cpp',
+      '.h', '.hpp', '.sql', '.env', '.gitignore', '.dockerignore',
+      ''
+    ];
+    if (ext && !allowedExtensions.includes(ext)) {
+      return NextResponse.json(
+        { error: `File type ${ext} not allowed. Only text and code files are permitted.` },
         { status: 400 }
       );
     }
