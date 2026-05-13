@@ -70,11 +70,11 @@ export async function GET(request: Request) {
     );
 
     return NextResponse.json({ items, type: 'directory' });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error reading files:', error);
 
     // Handle path traversal attempts
-    if (error.message === 'Invalid path: Access denied') {
+    if (error instanceof Error && error.message === 'Invalid path: Access denied') {
       return NextResponse.json(
         { error: 'Invalid path: Access denied' },
         { status: 403 }
@@ -157,11 +157,11 @@ export async function POST(request: Request) {
       await fs.writeFile(fullPath, content || '', 'utf-8');
       return NextResponse.json({ success: true, message: 'File created' });
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error creating file/directory:', error);
 
     // Handle path traversal attempts
-    if (error.message === 'Invalid path: Access denied') {
+    if (error instanceof Error && error.message === 'Invalid path: Access denied') {
       return NextResponse.json(
         { error: 'Invalid path: Access denied' },
         { status: 403 }
@@ -231,11 +231,11 @@ export async function PUT(request: Request) {
     const fullPath = sanitizePath(filePath);
     await fs.writeFile(fullPath, content, 'utf-8');
     return NextResponse.json({ success: true, message: 'File updated' });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error updating file:', error);
 
     // Handle path traversal attempts
-    if (error.message === 'Invalid path: Access denied') {
+    if (error instanceof Error && error.message === 'Invalid path: Access denied') {
       return NextResponse.json(
         { error: 'Invalid path: Access denied' },
         { status: 403 }
@@ -283,8 +283,8 @@ export async function DELETE(request: Request) {
       }
 
       return NextResponse.json({ success: true, message: 'Deleted successfully' });
-    } catch (statError: any) {
-      if (statError.code === 'ENOENT') {
+    } catch (statError: unknown) {
+      if ((statError as NodeJS.ErrnoException).code === 'ENOENT') {
         return NextResponse.json(
           { error: 'File or directory does not exist' },
           { status: 404 }
@@ -292,11 +292,11 @@ export async function DELETE(request: Request) {
       }
       throw statError;
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error deleting file/directory:', error);
 
     // Handle path traversal attempts
-    if (error.message === 'Invalid path: Access denied') {
+    if (error instanceof Error && error.message === 'Invalid path: Access denied') {
       return NextResponse.json(
         { error: 'Invalid path: Access denied' },
         { status: 403 }

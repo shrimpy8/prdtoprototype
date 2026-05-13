@@ -6,7 +6,7 @@ export default function NotFound() {
           Prototype Not Found
         </h1>
         <p className="text-gray-600 dark:text-gray-400">
-          The prototype you're looking for doesn't exist.
+          The prototype you&apos;re looking for doesn&apos;t exist.
         </p>
       </div>
     </div>
