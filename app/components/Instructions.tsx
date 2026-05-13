@@ -146,7 +146,7 @@ export default function Instructions({ onCreateDoc, onCreatePrototype }: Instruc
                   <div className="flex items-start gap-3">
                     <span className="text-xl font-bold text-green-600">1</span>
                     <div>
-                      <p className="font-medium mb-1">Click the "+ New Doc" button</p>
+                      <p className="font-medium mb-1">Click the &ldquo;+ New Doc&rdquo; button</p>
                       <p className="text-sm text-gray-600 dark:text-gray-400">
                         Located in the top-right corner of the header
                       </p>
@@ -157,7 +157,7 @@ export default function Instructions({ onCreateDoc, onCreatePrototype }: Instruc
                     <div>
                       <p className="font-medium mb-1">Enter a filename</p>
                       <p className="text-sm text-gray-600 dark:text-gray-400">
-                        The file will be created in the "docs and prds" folder (e.g., "my-spec.md")
+                        The file will be created in the &ldquo;docs and prds&rdquo; folder (e.g., &ldquo;my-spec.md&rdquo;)
                       </p>
                     </div>
                   </div>
@@ -166,8 +166,8 @@ export default function Instructions({ onCreateDoc, onCreatePrototype }: Instruc
                     <div>
                       <p className="font-medium mb-1">Edit and save</p>
                       <p className="text-sm text-gray-600 dark:text-gray-400">
-                        Click "Edit" to modify the markdown content, then "Save" when done. 
-                        You can also delete documents using the "Delete" button.
+                        Click &ldquo;Edit&rdquo; to modify the markdown content, then &ldquo;Save&rdquo; when done.
+                        You can also delete documents using the &ldquo;Delete&rdquo; button.
                       </p>
                     </div>
                   </div>
@@ -203,9 +203,9 @@ export default function Instructions({ onCreateDoc, onCreatePrototype }: Instruc
                   <div className="flex items-start gap-3">
                     <span className="text-xl font-bold text-purple-600">1</span>
                     <div>
-                      <p className="font-medium mb-1">Click the "+ New Prototype" button</p>
+                      <p className="font-medium mb-1">Click the &ldquo;+ New Prototype&rdquo; button</p>
                       <p className="text-sm text-gray-600 dark:text-gray-400">
-                        Located next to the "New Doc" button in the header
+                        Located next to the &ldquo;New Doc&rdquo; button in the header
                       </p>
                     </div>
                   </div>
@@ -214,7 +214,7 @@ export default function Instructions({ onCreateDoc, onCreatePrototype }: Instruc
                     <div>
                       <p className="font-medium mb-1">Enter a prototype name</p>
                       <p className="text-sm text-gray-600 dark:text-gray-400">
-                        The name will be used to create a folder and URL route (e.g., "my-app" becomes /prototypes/my-app)
+                        The name will be used to create a folder and URL route (e.g., &ldquo;my-app&rdquo; becomes /prototypes/my-app)
                       </p>
                     </div>
                   </div>
@@ -271,9 +271,9 @@ export default function Instructions({ onCreateDoc, onCreatePrototype }: Instruc
                     <h3 className="font-semibold mb-2 text-gray-900 dark:text-gray-100">📝 Documents</h3>
                     <ul className="text-sm space-y-1 list-disc list-inside">
                       <li>Click any markdown file to view it</li>
-                      <li>Use "Edit" to modify content</li>
-                      <li>Click "Save" to persist changes</li>
-                      <li>Use "Delete" to remove files</li>
+                      <li>Use &ldquo;Edit&rdquo; to modify content</li>
+                      <li>Click &ldquo;Save&rdquo; to persist changes</li>
+                      <li>Use &ldquo;Delete&rdquo; to remove files</li>
                     </ul>
                   </div>
                   <div className="p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
@@ -281,7 +281,7 @@ export default function Instructions({ onCreateDoc, onCreatePrototype }: Instruc
                     <ul className="text-sm space-y-1 list-disc list-inside">
                       <li>Browse files in the left sidebar</li>
                       <li>Click folders to navigate</li>
-                      <li>Use "← Back" to go up directories</li>
+                      <li>Use &ldquo;← Back&rdquo; to go up directories</li>
                       <li>Hover over prototypes to see delete option</li>
                     </ul>
                   </div>
