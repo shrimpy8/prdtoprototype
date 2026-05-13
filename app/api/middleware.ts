@@ -9,6 +9,19 @@ interface RateLimitRecord {
 }
 
 const rateLimit = new Map<string, RateLimitRecord>();
+const CLEANUP_INTERVAL = 5 * 60 * 1000; // 5 minutes
+let lastCleanup = Date.now();
+
+function pruneExpiredEntries(): void {
+  const now = Date.now();
+  if (now - lastCleanup < CLEANUP_INTERVAL) return;
+  lastCleanup = now;
+  for (const [ip, record] of rateLimit) {
+    if (now > record.resetTime) {
+      rateLimit.delete(ip);
+    }
+  }
+}
 
 /**
  * Check if an IP address is within rate limits
@@ -22,6 +35,7 @@ export function checkRateLimit(
   requests: number = 100,
   windowMs: number = 60000
 ): boolean {
+  pruneExpiredEntries();
   const now = Date.now();
 
   const record = rateLimit.get(ip);
@@ -48,11 +62,12 @@ export function checkRateLimit(
  * @returns Client IP address or 'unknown'
  */
 export function getClientIP(request: Request): string {
-  // Try to get IP from various headers (for proxies/load balancers)
+  // Take the LAST IP in x-forwarded-for — the one added by our own proxy,
+  // not the first which is client-controlled and trivially spoofable.
   const forwardedFor = request.headers.get('x-forwarded-for');
   if (forwardedFor) {
-    // x-forwarded-for can contain multiple IPs, take the first one
-    return forwardedFor.split(',')[0].trim();
+    const ips = forwardedFor.split(',').map(ip => ip.trim());
+    return ips[ips.length - 1];
   }
 
   const realIP = request.headers.get('x-real-ip');
@@ -60,6 +75,5 @@ export function getClientIP(request: Request): string {
     return realIP;
   }
 
-  // Fallback to 'unknown' if no IP found
   return 'unknown';
 }

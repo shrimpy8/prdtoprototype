@@ -1,6 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
+import DeleteConfirmDialog from './DeleteConfirmDialog';
+import { getPrototypeName } from '../lib/utils';
 
 interface FileItem {
   name: string;
@@ -26,26 +28,27 @@ export default function FileBrowser({ onFileSelect, onFolderSelect, currentPath,
   const [deleteConfirm, setDeleteConfirm] = useState<FileItem | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
-  const loadDirectory = async (dir: string = '') => {
+  const currentDirRef = useRef(currentDir);
+  currentDirRef.current = currentDir;
+
+  const loadDirectory = useCallback(async (dir: string = '') => {
     setLoading(true);
     try {
       const params = new URLSearchParams();
       if (dir) params.set('dir', dir);
-      
+
       const response = await fetch(`/api/files?${params.toString()}`);
       const data = await response.json();
-      
+
       if (data.items) {
         // Filter to only show docs-and-prds and prototypes directories
         const filtered = data.items.filter((item: FileItem) => {
           if (dir === '') {
-            // At root, only show these two directories
             return item.name === 'docs and prds' || item.name === 'prototypes';
           }
-          // Inside directories, show everything
           return true;
         });
-        
+
         // Sort: directories first, then files
         const sorted = [...filtered].sort((a, b) => {
           if (a.type !== b.type) {
@@ -61,36 +64,30 @@ export default function FileBrowser({ onFileSelect, onFolderSelect, currentPath,
     } finally {
       setLoading(false);
     }
-  };
-
-  useEffect(() => {
-    loadDirectory();
   }, []);
 
   useEffect(() => {
+    loadDirectory();
+  }, [loadDirectory]);
+
+  useEffect(() => {
     if (refreshKey !== undefined) {
-      loadDirectory(currentDir);
+      loadDirectory(currentDirRef.current);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [refreshKey]);
+  }, [refreshKey, loadDirectory]);
 
   const handleItemClick = (item: FileItem, e?: React.MouseEvent) => {
-    // Don't navigate if clicking action buttons
     if (e && (e.target as HTMLElement).closest('.delete-button, .open-prototype-button')) {
       return;
     }
 
     if (item.type === 'directory') {
-      // Check if it's a top-level folder (docs and prds or prototypes)
       if (item.path === 'docs and prds' || item.path === 'prototypes') {
-        // Notify parent about folder selection
         if (onFolderSelect) {
           onFolderSelect(item.path);
         }
-        // Still navigate into the folder in the sidebar
         loadDirectory(item.path);
       } else {
-        // Regular directory navigation
         loadDirectory(item.path);
       }
     } else {
@@ -118,26 +115,20 @@ export default function FileBrowser({ onFileSelect, onFolderSelect, currentPath,
       }
 
       const deletedPath = deleteConfirm.path;
-      
-      // Close the dialog first
       setDeleteConfirm(null);
-      
-      // Clear selection FIRST if the deleted item or its children were selected
+
       if (currentPath && (currentPath === deletedPath || currentPath.startsWith(deletedPath + '/'))) {
         onFileSelect('', '');
       }
 
-      // If we're inside the deleted directory, navigate back
       if (currentDir === deletedPath || currentDir.startsWith(deletedPath + '/')) {
         const parentDir = deletedPath.split('/').slice(0, -1).join('/');
         setCurrentDir(parentDir);
         loadDirectory(parentDir);
       } else {
-        // Just refresh the current directory
         loadDirectory(currentDir);
       }
-      
-      // Trigger parent refresh
+
       if (onRefresh) {
         onRefresh();
       }
@@ -172,12 +163,6 @@ export default function FileBrowser({ onFileSelect, onFolderSelect, currentPath,
     return item.type === 'directory' && item.path.startsWith('prototypes/') && item.path !== 'prototypes';
   };
 
-  const getPrototypeName = (path: string) => {
-    // Extract prototype name from path like "prototypes/my-prototype" -> "my-prototype"
-    const parts = path.split('/');
-    return parts[parts.length - 1];
-  };
-
   const handleOpenPrototype = (item: FileItem, e: React.MouseEvent) => {
     e.stopPropagation();
     const prototypeName = getPrototypeName(item.path);
@@ -203,7 +188,7 @@ export default function FileBrowser({ onFileSelect, onFolderSelect, currentPath,
             </h2>
           </div>
         </div>
-        
+
         <div className="flex-1 overflow-y-auto p-2">
           {loading ? (
             <div className="text-center text-gray-500 dark:text-gray-400 py-4">
@@ -241,6 +226,7 @@ export default function FileBrowser({ onFileSelect, onFolderSelect, currentPath,
                         onClick={(e) => handleOpenPrototype(item, e)}
                         className="open-prototype-button px-2 py-2 text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 transition-colors"
                         title={`Open ${item.name} in new tab`}
+                        aria-label={`Open ${item.name} in new tab`}
                       >
                         <svg
                           className="w-4 h-4"
@@ -260,6 +246,7 @@ export default function FileBrowser({ onFileSelect, onFolderSelect, currentPath,
                         onClick={(e) => handleDeleteClick(item, e)}
                         className="delete-button px-2 py-2 text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 transition-colors"
                         title="Delete prototype"
+                        aria-label={`Delete ${item.name}`}
                       >
                         <svg
                           className="w-4 h-4"
@@ -284,59 +271,14 @@ export default function FileBrowser({ onFileSelect, onFolderSelect, currentPath,
         </div>
       </div>
 
-      {/* Delete Confirmation Dialog */}
       {deleteConfirm && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full mx-4 shadow-xl">
-            <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-gray-100">
-              Delete Prototype?
-            </h3>
-            <p className="text-gray-600 dark:text-gray-400 mb-2">
-              Are you sure you want to delete the prototype <strong>"{deleteConfirm.name}"</strong>?
-            </p>
-            <p className="text-sm text-red-600 dark:text-red-400 mb-6">
-              This will permanently delete the entire prototype directory and all its files. This action cannot be undone.
-            </p>
-            <div className="flex gap-2 justify-end">
-              <button
-                onClick={() => setDeleteConfirm(null)}
-                disabled={isDeleting}
-                className="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-md hover:bg-gray-300 dark:hover:bg-gray-600 disabled:opacity-50"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleDeleteConfirm}
-                disabled={isDeleting}
-                className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 disabled:opacity-50 flex items-center gap-2"
-              >
-                {isDeleting ? (
-                  <>
-                    <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
-                      <circle
-                        className="opacity-25"
-                        cx="12"
-                        cy="12"
-                        r="10"
-                        stroke="currentColor"
-                        strokeWidth="4"
-                        fill="none"
-                      />
-                      <path
-                        className="opacity-75"
-                        fill="currentColor"
-                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                      />
-                    </svg>
-                    Deleting...
-                  </>
-                ) : (
-                  'Delete Prototype'
-                )}
-              </button>
-            </div>
-          </div>
-        </div>
+        <DeleteConfirmDialog
+          itemName={deleteConfirm.name}
+          itemType="Prototype"
+          isDeleting={isDeleting}
+          onConfirm={handleDeleteConfirm}
+          onCancel={() => setDeleteConfirm(null)}
+        />
       )}
     </>
   );

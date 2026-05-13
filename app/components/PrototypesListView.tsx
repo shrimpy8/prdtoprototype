@@ -1,6 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import DeleteConfirmDialog from './DeleteConfirmDialog';
+import { getPrototypeName } from '../lib/utils';
 
 interface FileItem {
   name: string;
@@ -54,11 +56,6 @@ export default function PrototypesListView({ onCreatePrototype, refreshKey }: Pr
       loadPrototypes();
     }
   }, [refreshKey]);
-
-  const getPrototypeName = (path: string) => {
-    const parts = path.split('/');
-    return parts[parts.length - 1];
-  };
 
   const handleOpenPrototype = (prototype: FileItem) => {
     const prototypeName = getPrototypeName(prototype.path);
@@ -187,6 +184,7 @@ export default function PrototypesListView({ onCreatePrototype, refreshKey }: Pr
                             <button
                               onClick={() => handleOpenPrototype(prototype)}
                               className="px-3 py-1.5 bg-blue-600 text-white text-sm rounded-md hover:bg-blue-700 transition-colors flex items-center gap-2"
+                              aria-label={`Open ${prototype.name} in new tab`}
                             >
                               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
@@ -208,6 +206,7 @@ export default function PrototypesListView({ onCreatePrototype, refreshKey }: Pr
                             <button
                               onClick={() => handleDeleteClick(prototype)}
                               className="px-3 py-1.5 bg-red-600 text-white text-sm rounded-md hover:bg-red-700 transition-colors flex items-center gap-2"
+                              aria-label={`Delete ${prototype.name}`}
                             >
                               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -226,59 +225,14 @@ export default function PrototypesListView({ onCreatePrototype, refreshKey }: Pr
         </div>
       </div>
 
-      {/* Delete Confirmation Dialog */}
       {deleteConfirm && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full mx-4 shadow-xl">
-            <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-gray-100">
-              Delete Prototype?
-            </h3>
-            <p className="text-gray-600 dark:text-gray-400 mb-2">
-              Are you sure you want to delete the prototype <strong>"{deleteConfirm.name}"</strong>?
-            </p>
-            <p className="text-sm text-red-600 dark:text-red-400 mb-6">
-              This will permanently delete the entire prototype directory and all its files. This action cannot be undone.
-            </p>
-            <div className="flex gap-2 justify-end">
-              <button
-                onClick={() => setDeleteConfirm(null)}
-                disabled={isDeleting}
-                className="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-md hover:bg-gray-300 dark:hover:bg-gray-600 disabled:opacity-50"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleDeleteConfirm}
-                disabled={isDeleting}
-                className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 disabled:opacity-50 flex items-center gap-2"
-              >
-                {isDeleting ? (
-                  <>
-                    <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
-                      <circle
-                        className="opacity-25"
-                        cx="12"
-                        cy="12"
-                        r="10"
-                        stroke="currentColor"
-                        strokeWidth="4"
-                        fill="none"
-                      />
-                      <path
-                        className="opacity-75"
-                        fill="currentColor"
-                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                      />
-                    </svg>
-                    Deleting...
-                  </>
-                ) : (
-                  'Delete Prototype'
-                )}
-              </button>
-            </div>
-          </div>
-        </div>
+        <DeleteConfirmDialog
+          itemName={deleteConfirm.name}
+          itemType="Prototype"
+          isDeleting={isDeleting}
+          onConfirm={handleDeleteConfirm}
+          onCancel={() => setDeleteConfirm(null)}
+        />
       )}
     </>
   );

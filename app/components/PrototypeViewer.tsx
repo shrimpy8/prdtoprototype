@@ -59,7 +59,7 @@ export default function PrototypeViewer({ prototypePath }: PrototypeViewerProps)
       <iframe
         srcDoc={htmlContent}
         className="w-full h-full border-0"
-        sandbox="allow-scripts allow-same-origin"
+        sandbox="allow-scripts"
         title="Prototype Preview"
       />
     </div>
