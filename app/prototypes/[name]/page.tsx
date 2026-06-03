@@ -1,5 +1,6 @@
 import { notFound } from 'next/navigation';
 import fs from 'fs/promises';
+import { realpath } from 'fs/promises';
 import path from 'path';
 
 const CONTENT_DIR = path.join(process.cwd(), 'content');
@@ -13,13 +14,14 @@ async function getPrototype(name: string) {
     if (name.includes('..') || name.includes('/') || name.includes('\\') || name.includes('\0')) {
       return null;
     }
-    const prototypeDir = path.join(CONTENT_DIR, 'prototypes', name);
     const prototypesRoot = path.join(CONTENT_DIR, 'prototypes');
+    const prototypeDir = path.join(prototypesRoot, name);
+    // Lexical boundary check
     if (!prototypeDir.startsWith(prototypesRoot + path.sep)) {
       return null;
     }
     const indexPath = path.join(prototypeDir, 'index.html');
-    
+
     // Check if directory exists
     try {
       await fs.access(prototypeDir);
@@ -27,19 +29,32 @@ async function getPrototype(name: string) {
       return null;
     }
 
-    // Read index.html
-    const htmlContent = await fs.readFile(indexPath, 'utf-8');
-    
+    // PTP-05: realpath check — ensure the directory hasn't been swapped to a symlink
+    const realDir = await realpath(prototypeDir).catch(() => null);
+    if (!realDir || !realDir.startsWith(prototypesRoot + path.sep)) {
+      return null;
+    }
+
+    // PTP-05a: realpath check on index.html itself — a symlinked index.html could escape the prototype dir
+    const realIndex = await realpath(indexPath).catch(() => null);
+    if (!realIndex || !realIndex.startsWith(realDir + path.sep)) {
+      return null;
+    }
+
+    // Read index.html via the resolved real path to prevent symlink escape
+    const htmlContent = await fs.readFile(realIndex, 'utf-8');
+
     // Read other files in the directory (CSS, JS, etc.)
-    const files = await fs.readdir(prototypeDir);
+    const files = await fs.readdir(realDir);
     const assets: Record<string, string> = {};
-    
+
     for (const file of files) {
       if (file !== 'index.html') {
-        const filePath = path.join(prototypeDir, file);
+        const filePath = path.join(realDir, file);
         try {
-          const stats = await fs.stat(filePath);
-          if (stats.isFile()) {
+          // PTP-05: use lstat so we see symlinks rather than following them
+          const stats = await fs.lstat(filePath);
+          if (stats.isFile() && !stats.isSymbolicLink()) {
             const content = await fs.readFile(filePath, 'utf-8');
             assets[file] = content;
           }
@@ -56,6 +71,8 @@ async function getPrototype(name: string) {
     return null;
   }
 }
+
+// PTP-02: CSP for this route is set via next.config.ts headers() for /prototypes/:name*
 
 export default async function PrototypePage({ params }: PageProps) {
   const { name } = await params;
@@ -119,10 +136,11 @@ export default async function PrototypePage({ params }: PageProps) {
 
   return (
     <div className="h-screen w-screen">
+      {/* PTP-02: sandbox reduced to allow-scripts only; allow-forms and allow-popups removed */}
       <iframe
         srcDoc={html}
         className="w-full h-full border-0"
-        sandbox="allow-scripts allow-forms allow-popups"
+        sandbox="allow-scripts"
         title={name}
       />
     </div>

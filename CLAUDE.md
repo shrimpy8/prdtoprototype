@@ -113,3 +113,30 @@ Every `eslint-disable` comment is a deferred bug. Fix the root cause; never ship
 - XSS escaping applied to every user string injected into HTML template literals
 - Body size check present in all POST/PUT handlers that call `JSON.parse()`
 - Rate limit `Map` has periodic pruning and uses last X-Forwarded-For IP
+
+## Security Patterns Learned (2026-06-03)
+
+### 1. No-Origin AND no-Referer requests must be rejected
+`assertWriteAllowed()` must return 403 when **neither** `Origin` nor `Referer` is present. Accepting bare requests (e.g., direct `curl`, scripts) makes the same-origin check meaningless — an attacker can simply omit both headers. The only explicit exception: a valid `X-Write-Token` header matching the `PRDTP_WRITE_TOKEN` env var may bypass the header check to allow intentional programmatic access.
+
+### 2. POST/PUT must require `Content-Type: application/json`
+Mutation handlers that parse JSON bodies must actively require `Content-Type: application/json` and return 415 if the header is absent or wrong. GET, HEAD, and DELETE (no body) are exempt. Accepting any content type allows cross-site HTML form submissions to reach the JSON parser, defeating the content-type barrier that browsers enforce for simple cross-origin requests.
+
+### 3. Realpath check must cover individual files, not just directories
+Calling `fs.realpath(directory)` and checking the result is inside `CONTENT_DIR` is not sufficient. A symlinked file inside that directory (e.g., `content/prototypes/<name>/index.html` → `../../etc/passwd`) still escapes. After resolving the directory, also call `fs.realpath(filePath)` on every specific file read and verify the result stays inside the already-resolved directory. Both checks are required.
+
+### 4. Symlinks must be excluded from directory listings
+Use `lstat()` (not `stat()`) when iterating directory entries. If `stats.isSymbolicLink()` is true, skip the entry — do not return it as a regular file. Returning symlinks exposes their existence to callers and misleads consumers that treat the listing as a safe file inventory.
+
+### 5. Extension allowlists must be split by content area
+A single global allowlist is too broad. Apply per-folder restrictions:
+- `docs and prds/` → markdown, plain text, JSON, YAML only
+- `prototypes/` → HTML, CSS, JS, JSON, and safe static assets only
+
+Never allow `.env`, shell scripts (`.sh`), compiled-language sources, or extensionless files in any API-accessible content area. `.env` is especially dangerous because `GET /api/files?path=...` returns file contents directly.
+
+### 6. Top-level content directories must be undeletable via API
+The `DELETE` handler must explicitly reject requests targeting `CONTENT_DIR` itself or any protected top-level folder (`docs and prds`, `prototypes`) and return 403. Client-side confirmation dialogs are not a server-side guard — they are bypassed by direct API calls. Leaf files and prototype subdirectories may be deleted normally.
+
+### 7. Prototype sandbox must use `allow-scripts` only
+Never add `allow-forms` or `allow-popups` to an iframe sandbox wrapping prototype HTML by default. `allow-forms` enables cross-origin form submission; `allow-popups` enables phishing windows. The share/full-page route must be at least as restrictive as the embedded preview route. If a prototype genuinely needs forms or popups, require explicit per-prototype opt-in with a visible trust warning — not a global flag.

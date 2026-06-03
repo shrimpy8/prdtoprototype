@@ -39,3 +39,6 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Review artifacts — not committed
+docs/HIGH_PRIORITY_REVIEW_2026-06-03.md
