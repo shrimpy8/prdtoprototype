@@ -1,5 +1,7 @@
 # CLAUDE.md — prdtoprototype
 
+> **Scope:** project-specific decisions, invariants, and gotchas only. General engineering, security, language, and testing standards are handled globally and are not restated here.
+
 ## Stack
 - Next.js 16 App Router, TypeScript strict mode
 - Node.js `fs` API (server-side file system — all content under `content/`)
